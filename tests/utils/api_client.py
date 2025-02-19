@@ -1,5 +1,5 @@
 import requests
-from config import BASE_URL
+from tests.utils.config import BASE_URL
 
 def get(endpoint):
     """Send a GET request."""

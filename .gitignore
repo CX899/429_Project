@@ -1,1 +1,7 @@
 venv
+tests/__pycache__
+tests/categories/__pycache__
+tests/projects/__pycache__
+tests/todos/__pycache__
+tests/utils/__pycache__
+__pycache__
