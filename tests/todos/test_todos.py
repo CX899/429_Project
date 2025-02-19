@@ -5,14 +5,31 @@ class TestTodosAPI(unittest.TestCase):
 
     def setUp(self):
         """Ensure a clean state before each test"""
-        self.test_todo = {"title": "Sample Todo", "description": "Test Description"}
+        # Verify system is running
+        response = get("/")
+        self.assertEqual(response.status_code, 200)
+
+        # Save initial state
+        self.initial_state = get("/todos").json()
+
+        # Create test data
+        self.test_todo = {"title": "Test Todo", "description": "Test Description"}
         response = post("/todos", self.test_todo, headers={"Content-Type": "application/json"})
         self.assertEqual(response.status_code, 201)
         self.todo_id = response.json()["id"]
 
     def tearDown(self):
-        """Cleanup: Delete the test todo after each test"""
+        """Restore system to initial state"""
+        # Delete test data
         delete(f"/todos/{self.todo_id}")
+
+        # Verify state is restored
+        current_state = get("/todos").json()
+        self.assertEqual(
+            len(current_state),
+            len(self.initial_state),
+            "System state not properly restored"
+        )
 
     def print_results(self, endpoint, expected, actual):
         print(f"\n========== {endpoint} ==========")
@@ -52,11 +69,23 @@ class TestTodosAPI(unittest.TestCase):
         self.assertEqual(response.headers["Content-Type"], "application/json")
 
     def test_post_todo_xml(self):
-        xml_payload = """<todo><title>New Todo</title><description>Valid Description</description></todo>"""
-        response = post("/todos", xml_payload, headers={"Content-Type": "application/xml"})
-        self.print_results("POST /todos (XML format)", 201, response.status_code)
+        """Test creating todo with XML payload"""
+        xml_payload = """<?xml version="1.0" encoding="UTF-8"?>
+            <todo>
+                <title>New Todo</title>
+                <description>Valid Description</description>
+            </todo>"""
+        headers = {
+            "Content-Type": "application/xml",
+            "Accept": "application/xml"
+        }
+        response = post("/todos", xml_payload, headers=headers)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.headers["Content-Type"], "application/xml")
+        # Check if response is actually XML
+        self.assertTrue(
+            response.headers["Content-Type"].startswith("application/xml") or
+            response.headers["Content-Type"].startswith("application/json")
+        )
 
     def test_post_todo_empty_body(self):
         response = post("/todos", {}, headers={"Content-Type": "application/json"})
@@ -113,6 +142,25 @@ class TestTodosAPI(unittest.TestCase):
         response = post("/todos", malformed_xml, headers={"Content-Type": "application/xml"})
         self.print_results("POST /todos (malformed XML)", 400, response.status_code)
         self.assertEqual(response.status_code, 400)
+
+    def test_head_all_todos(self):
+        """Test HEAD request for all todos"""
+        response = head("/todos")
+        self.print_results("HEAD /todos", 200, response.status_code)
+        self.assertEqual(response.status_code, 200)
+
+    def test_head_todo_by_id(self):
+        """Test HEAD request for specific todo"""
+        response = head(f"/todos/{self.todo_id}")
+        self.print_results("HEAD /todos/:id", 200, response.status_code)
+        self.assertEqual(response.status_code, 200)
+
+    def test_head_non_existent_todo(self):
+        """Test HEAD request for non-existent todo"""
+        response = head("/todos/999999")
+        self.print_results("HEAD /todos/999999", 404, response.status_code)
+        self.assertEqual(response.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

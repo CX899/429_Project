@@ -5,14 +5,37 @@ class TestCategoriesAPI(unittest.TestCase):
 
     def setUp(self):
         """Ensure a clean state before each test"""
-        self.test_category = {"title": "Test Category", "description": "For unit testing"}
-        response = post("/categories", self.test_category, headers={"Content-Type": "application/json"})
+        # Verify system is running
+        response = get("/")
+        self.assertEqual(response.status_code, 200)
+
+        # Save initial state
+        self.initial_state = get("/todos").json()
+
+        self.test_category = {"title": "WorkTest", "description": "TestTEST"}
+        category_response = post("/categories", self.test_category, headers={"Content-Type": "application/json"})
+        self.assertEqual(category_response.status_code, 201)
+        self.category_id = category_response.json()["id"]
+
+        # Create test data
+        self.test_todo = {"title": "Test Todo", "description": "Test Description"}
+        response = post("/todos", self.test_todo, headers={"Content-Type": "application/json"})
         self.assertEqual(response.status_code, 201)
-        self.category_id = response.json().get("id")
+        self.todo_id = response.json()["id"]
 
     def tearDown(self):
-        """Cleanup: Delete the test category after each test"""
+        """Restore system to initial state"""
+        # Delete test data
         delete(f"/categories/{self.category_id}")
+        delete(f"/todos/{self.todo_id}")
+
+        # Verify state is restored
+        current_state = get("/todos").json()
+        self.assertEqual(
+            len(current_state),
+            len(self.initial_state),
+            "System state not properly restored"
+        )
 
     def print_results(self, endpoint, expected, actual):
         print(f"\n========== {endpoint} ==========")

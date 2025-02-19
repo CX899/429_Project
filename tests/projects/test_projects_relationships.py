@@ -35,10 +35,34 @@ class TestProjectRelationships(unittest.TestCase):
 
     def test_get_todos_for_project(self):
         """Test retrieving todos linked to a project"""
-        post(f"/projects/{self.project_id}/tasks", {"id": self.todo_id})
+        # First create a todo and link it
+        todo_data = {"title": "Test Todo"}
+        todo_response = post("/todos", todo_data,
+                            headers={"Content-Type": "application/json"})
+        self.assertEqual(todo_response.status_code, 201)
+        todo_id = todo_response.json()["id"]
+
+        # Link todo to project
+        post(f"/projects/{self.project_id}/tasks",
+             {"id": todo_id},
+             headers={"Content-Type": "application/json"})
+
+        # Get todos for project
         response = get(f"/projects/{self.project_id}/tasks")
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(any(todo["id"] == self.todo_id for todo in response.json()))
+        response_data = response.json()
+
+        # Debug print to see the structure
+        print(f"Response data: {response_data}")
+
+        # Access the todos list from the response
+        todos = response_data.get('todos', [])
+
+        # Check if the todo exists in the list
+        self.assertTrue(
+            any(str(todo.get('id')) == str(todo_id) for todo in todos),
+            f"Todo with id {todo_id} not found in response: {todos}"
+        )
 
     def test_remove_todo_from_project(self):
         """Test removing a todo from a project"""
