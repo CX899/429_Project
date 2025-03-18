@@ -5,3 +5,4 @@ tests/projects/__pycache__
 tests/todos/__pycache__
 tests/utils/__pycache__
 __pycache__
+.DS_Store
