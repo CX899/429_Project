@@ -9,21 +9,33 @@ Feature: Delete a Project Given an ID
       | 3  | "Year-end Reports"   | true      | false  | "Prepare financial reports" |
 
   # Normal Flow
-  Scenario: Delete a specific Project by ID
-    When I send a DELETE request to "/projects/2"
+  Scenario Outline: Delete a specific Project by ID
+    When I send a <method> request to "/projects/<id>"
     Then the response status should be 204
     And when I send a GET request to "/projects"
-    Then the response should not contain a project with ID 2
-    And the response should contain projects with IDs 1 and 3
+    Then the response should not contain a project with ID <id>
+    And the response should contain projects with IDs <remaining_ids>
+
+    Examples:
+      | method | id | remaining_ids |
+      | DELETE | 2  | 1 and 3       |
 
   # Alternate Flow
-  Scenario: Attempt to delete a Project with a valid but non-existent ID
-    When I send a DELETE request to "/projects/999"
+  Scenario Outline: Attempt to delete a Project with a valid but non-existent ID
+    When I send a <method> request to "/projects/<id>"
     Then the response status should be 404
     And the response should contain a "Not Found" message
 
+    Examples:
+      | method | id  |
+      | DELETE | 999 |
+
   # Error Flow
-  Scenario: Attempt to delete a Project with an invalid ID format
-    When I send a DELETE request to "/projects/invalid-id"
+  Scenario Outline: Attempt to delete a Project with an invalid ID format
+    When I send a <method> request to "/projects/<invalid_id>"
     Then the response status should be 400
     And the response should contain an error message about invalid ID format
+
+    Examples:
+      | method | invalid_id  |
+      | DELETE | invalid-id  |
