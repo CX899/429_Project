@@ -25,7 +25,13 @@ Feature: Get a ToDo by ID
     And the response JSON should contain an error message "ToDo not found"
   # Error Flow
 
-  Scenario: Retrieve a ToDo with an invalidly formatted ID
-    When the user sends a GET request to "/todos/abc"
+  Scenario: Retrieve a ToDo with an invalid ID format (Error Flow)
+    Given a ToDo with ID equal to <id> does not exist or the ID format is invalid
+    When the user sends a GET request to "/todos/<id>"
     Then the response status should be 400
-    And the response JSON should contain an error message "Invalid ID format"
+    And the response JSON should contain an error message <message>
+
+    Examples:
+      | id     | message                                        |
+      | abc    | "Could not find an instance with todos/abc"    |
+      | 123abc | "Could not find an instance with todos/123abc" |

@@ -1,38 +1,32 @@
 Feature: Create a ToDo
-  As a user, I want to create a new ToDo so that I can keep track of a task.
+  As a user, I want to create a new ToDo so that I can keep track of tasks.
 
   Background:
-    Given the system is running with no specific todos initially
+    Given the system is running
   # Normal Flow
 
-  Scenario: Create a ToDo with a valid body
-    When the user sends a POST request to "/todos" with a valid JSON body:
-      | title       | "Buy groceries"     |
-      | description | "Milk, eggs, bread" |
-      | doneStatus  | false               |
+  Scenario: Create a ToDo with valid data
+    Given I have a valid JSON body for a new ToDo with:
+      | title           | doneStatus | description             |
+      | "Buy groceries" | false      | "Milk, eggs, and bread" |
+    When I send a POST request to "/todos" with this JSON body
     Then the response status should be 201
-    And the response JSON should indicate a successful creation of the ToDo
-    And the response JSON should contain:
-      | title       | "Buy groceries"     |
-      | description | "Milk, eggs, bread" |
-      | doneStatus  | false               |
+    And the response JSON should contain a new ToDo with the specified title, doneStatus, and description
+    And the response JSON should contain a unique "id"
   # Alternate Flow
 
   Scenario: Create a ToDo without specifying an ID
-    When the users send a POST request to "/todos" with the following JSON body:
-      | title       | "Finish assignment" |
-      | description | "Due tomorrow"      |
-      | doneStatus  | false               |
+    Given I have a valid JSON body for a new ToDo without an "id" field:
+      | title      | doneStatus | description   |
+      | "Call mom" | false      | "Weekly call" |
+    When I send a POST request to "/todos" with this JSON body
     Then the response status should be 201
-    And the response JSON should show a newly generated unique ID for the todo
-    And the response JSON should contain:
-      | title       | "Finish assignment" |
-      | description | "Due tomorrow"      |
-      | doneStatus  | false               |
+    And the response JSON should contain a new ToDo with the specified title, doneStatus, and description
+    And the response JSON should contain a newly generated "id" that does not match any existing ToDo
   # Error Flow
 
-  Scenario: Create a ToDo with an invalid body
-    When the user sends a POST request to "/todos" with the following JSON body:
-      | title | "" |
+  Scenario: Attempt to create a ToDo with invalid or missing fields
+    Given I have an invalid JSON body for a new ToDo that is missing required fields
+    When I send a POST request to "/todos" with this invalid body
     Then the response status should be 400
-    And the response JSON should contain an error message "Invalid todo data"
+    And the response JSON should contain an error message indicating invalid input
