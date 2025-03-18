@@ -25,7 +25,7 @@ Feature: Get a ToDo by ID
     And the response JSON should contain an error message "ToDo not found"
   # Error Flow
 
-  Scenario: Retrieve a ToDo with an invalid ID format (Error Flow)
+  Scenario Outline: Retrieve a ToDo with an invalid ID format (Error Flow)
     Given a ToDo with ID equal to <id> does not exist or the ID format is invalid
     When the user sends a GET request to "/todos/<id>"
     Then the response status should be 400

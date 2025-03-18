@@ -9,14 +9,18 @@ Feature: Get All ToDos
       |  3 | "Finish assignment" | false      | "Due tomorrow"      |
   # Normal Flow
 
-  Scenario: Retrieve all ToDos
-    When I send a GET request to "/todos"
+  Scenario Outline: Retrieve all ToDos with endpoint "<endpoint>"
+    When the user sends a GET request to "<endpoint>"
     Then the response status should be 200
     And the response JSON should include the following todos:
       | id | title               | doneStatus | description         |
       |  1 | "Buy groceries"     | false      | "Milk, eggs, bread" |
       |  2 | "Call mom"          | false      | "Weekly call"       |
       |  3 | "Finish assignment" | false      | "Due tomorrow"      |
+
+    Examples:
+      | endpoint |
+      | /todos   |
   # Alternate Flow
 
   Scenario Outline: Retrieve filtered ToDos
@@ -29,3 +33,15 @@ Feature: Get All ToDos
       | filter_key | filter_value    |
       | doneStatus | false           |
       | title      | "Buy groceries" |
+  # Error Flow
+
+  Scenario Outline: Request ToDos with unsupported or invalid request
+    When the user sends a <method> request to "<invalid_endpoint>"
+    Then the response status should be <status>
+    And the response JSON should include an error message "<message>"
+
+    Examples:
+      | method | invalid_endpoint     | status | message                              |
+      | PATCH  | /todos               |    405 | "Method Not Allowed"                 |
+      | GET    | /todoss              |    404 | "Not Found"                          |
+      | GET    | /todos?doneStatus=xx |    400 | "Invalid value for doneStatus field" |

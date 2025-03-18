@@ -1,40 +1,45 @@
-Feature: Delete a ToDo Given an ID
-  As a user I want to delete a specific ToDo in order to remove it from my ToDos.
+Feature: Delete a ToDo by ID
+  As a user, I want to delete a specific ToDo in order to remove it from my ToDos.
 
-  Background:
-    Given the system contains the following todos
-      | id | title               | doneStatus | description         |
-      |  1 | "Buy groceries"     | false      | "Milk, eggs, bread" |
-      |  2 | "Call mom"          | false      | "Weekly call"       |
-      |  3 | "Finish assignment" | false      | "Due tomorrow"      |
-
+  Background: Server is running with ToDos
+    Given the system has been reset to its initial state
+    And the system contains the following todos:
+      | id | title           | doneStatus | description         |
+      |  1 | "Buy groceries" | false      | "Milk, eggs, bread" |
+      |  2 | "Call mom"      | false      | "Weekly call"       |
   # Normal Flow
-  Scenario: Successfully delete a ToDo
-    When I send a DELETE request to "/todos/2"
-    Then the response status should be 200
-    And the todo with id "2" should no longer exist in the system
-    And when I send a GET request to "/todos"
-    Then the response JSON should include only the following todos:
-      | id | title               | doneStatus | description         |
-      |  1 | "Buy groceries"     | false      | "Milk, eggs, bread" |
-      |  3 | "Finish assignment" | false      | "Due tomorrow"      |
 
-  # Alternate Flow
-  Scenario: Attempt to delete a non-existing ToDo
-    When I send a DELETE request to "/todos/99"
-    Then the response status should be 404
-    And the response should include an error message indicating "Todo not found"
-    And the system should still contain all original todos
-
-  # Error Flow
-  Scenario Outline: Attempt to delete a ToDo with invalid ID format
-    When I send a DELETE request to "/todos/<invalid_id>"
-    Then the response status should be 400
-    And the response should include an error message about invalid ID format
-    And the system should still contain all original todos
+  Scenario Outline: Successfully delete an existing ToDo
+    Given a ToDo with ID equal to <id> exists
+    When the user sends a DELETE request to "/todos/<id>"
+    Then the ToDo with id <id> is successfully deleted
+    And the user is notified of the completion of the deletion operation
 
     Examples:
-      | invalid_id   |
-      | "abc"        |
-      | "-1"         |
-      | "!@#$"       |
+      | id |
+      |  1 |
+      |  2 |
+  # Alternate Flow
+
+  Scenario Outline: Attempt to delete a non-existing ToDo
+    Given a ToDo with ID equal to <id> does not exist
+    When the user sends a DELETE request to "/todos/<id>"
+    Then the response status should be 404
+    And the response JSON should contain an error message <message>
+
+    Examples:
+      | id   | message          |
+      | 9999 | "ToDo not found" |
+      | 5000 | "ToDo not found" |
+  # Error Flow
+
+  Scenario Outline: Delete a ToDo with an invalid ID
+    Given a ToDo with ID equal to <id> does not exist or the ID format is invalid
+    When the user sends a DELETE request to "/todos/<id>"
+    Then the response status should be 400
+    And the response JSON should contain an error message <message>
+
+    Examples:
+      | id     | message                                        |
+      | abc    | "Could not find an instance with todos/abc"    |
+      | 123abc | "Could not find an instance with todos/123abc" |

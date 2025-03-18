@@ -6,7 +6,8 @@ Alice Godbout
 Gordon Ng
 Colin Xiong
 
-## Exploratory Testing Split:
+## Testing Split:
+- The testing was done equally, and everyone contributed around the same amount.
 
 
 ## Report split:
