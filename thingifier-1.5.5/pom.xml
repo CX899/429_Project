@@ -1,0 +1,127 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>uk.co.compendiumdev.thingifier</groupId>
+    <artifactId>thingifier-root</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+
+    <properties>
+        <thingifier.version>1.5.5</thingifier.version>
+        <swagger-models-version>2.1.4</swagger-models-version>
+        <gson-version>2.8.6</gson-version>
+        <junit.jupiter.version>5.6.2</junit.jupiter.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <java.version>1.8</java.version>
+        <rest-assured-version>4.2.0</rest-assured-version>
+    </properties>
+
+    <modules>
+        <module>ercoremodel</module>
+        <module>thingifier</module>
+        <module>examplemodels</module>
+        <module>todoManagerRestAuto</module>
+        <module>challenger</module>
+        <module>challengerAuto</module>
+        <module>standAloneTodoListRestApi</module>
+        <module>standAloneTodoListManagerRestApi</module>
+        <module>thingifierapp</module>
+        <module>swaggerizer</module>
+    </modules>
+
+
+</project>
+
+<!--
+
+1.5.5
+
+- under development
+
+- internal refactoring to create 'core' that is well covered
+
+Challenger
+- fixed defect where Challenger data was only loaded from AWS when GET /challenger was used, so harder to use between sessions
+    - this mainly only affected the 'secret' token session because challenger was loaded during persistence of 'passing' a challenge
+- fixed defect where, when no Challenger X-CHALLENGER header on /secret the 401 response did not return, and so passed through into null pointer processing
+- surface any aws issues in the message headers and on GUI
+- added some additional challenges, sectioned and ordered
+
+1.5.4
+
+- has automated swagger file generation - for non thingifier api routing then routing definitions should be added using the ThingifierApiDefn
+
+1.5.3
+
+- added hooks at the API request and response level to override default API processing functionality
+- api field order is controlled by the order of definitions
+- added API Config Profiles to make it easier to configure different API versions
+- added filters on GET requests e.g. ?status=true
+- added config to control if JSON or XML is allowed in response configured by accept header
+- HEAD method supported where GET methods supported
+- improved Accept header processing
+- added challenger app
+- started checklist doc
+
+1.5.2
+
+- added styling to the gui
+- added many configuration options
+- started added 'hooks' for responses to make easier to extend
+- added xml and json examples in documentation output
+- created heroku instance which auto clears
+- split out project into more modules to make easier to customise and maintain
+
+1.5.1
+
+- added simple view gui /gui
+- added compressed relationships - as default in response
+- both forms acceptable in the input
+
+        e.g.
+
+        ~~~~~~~~
+        "task-of": [
+            {
+              "guid": "91b56544-3345-48e6-93f3-986e53586390"
+            }
+        ],
+        "categories": [
+            {
+              "guid": "61693e4a-b1da-4adb-af37-d53d1b045311"
+            }
+          ]
+        ~~~~~~~~
+
+        instead of
+
+        ~~~~~~~~
+          "relationships": [
+    {
+      "task-of": [
+        {
+          "projects": [
+            {
+              "guid": "91b56544-3345-48e6-93f3-986e53586390"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "categories": [
+        {
+          "categories": [
+            {
+              "guid": "61693e4a-b1da-4adb-af37-d53d1b045311"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+        ~~~~~~~~
+        -->
