@@ -10,7 +10,6 @@ from hamcrest import assert_that, equal_to, has_length, greater_than_or_equal_to
 def step_verify_api_has_data(context):
     """
     Verify that the API has some todos data for testing.
-    This is a more flexible approach than requiring specific todos.
     """
     url = context.base_url + "/todos"
     response = requests.get(url)
