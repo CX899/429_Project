@@ -1,2 +1,4 @@
 requests
 behave
+jsonschema
+PyHamcrest

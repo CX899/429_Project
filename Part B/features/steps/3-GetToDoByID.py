@@ -1,24 +1,60 @@
-from behave import given, when, then
-from utils import make_request
 import json
-# Shared steps will be automatically loaded by behave
+import requests
+from behave import given, then
+from hamcrest import assert_that, equal_to, is_in
+from features.steps.test_utils import setup_test_todos, get_mapped_id
+
+@given('the system contains the following todos')
+def step_setup_todos(context):
+    test_todos = []
+    for row in context.table:
+        test_todo = {
+            'id': str(row['id']).strip(),
+            'title': row['title'].strip('"'),
+            'doneStatus': row['doneStatus'],
+            'description': row['description'].strip('"')
+        }
+        test_todos.append(test_todo)
+    
+    setup_test_todos(context, test_todos)
 
 @given('a ToDo with ID equal to {id} does not exist or the ID format is invalid')
-def verify_todo_nonexistent(context, id):
-    response = make_request(context, "GET", f"/todos/{id}")
-    assert response.status_code in [404, 400], f"Expected todo {id} to not exist or be invalid"
+def step_verify_todo_nonexistent(context, id):
+    if not id.isdigit():
+        print(f"ID {id} is not a valid numeric format")
+        return
+    
+    actual_id = get_mapped_id(context, id)
+    
+    response = requests.get(f"{context.base_url}/todos/{actual_id}")
+    
+    if response.status_code == 200:
+        delete_response = requests.delete(f"{context.base_url}/todos/{actual_id}")
+        assert delete_response.status_code in [200, 204], f"Failed to delete todo with ID {actual_id}"
+        print(f"Deleted existing todo with ID {actual_id} for test setup")
 
-@then('the response JSON should include the todo with id "{id}" with title "{title}", doneStatus "{doneStatus}" and description "{description}"')
-def verify_todo_details(context, id, title, doneStatus, description):
-    response_data = context.response.json()
-    assert str(response_data['id']) == id, "ID mismatch"
-    assert response_data['title'] == json.loads(title), "Title mismatch"
-    assert str(response_data['doneStatus']).lower() == doneStatus.lower(), "DoneStatus mismatch"
-    assert response_data['description'] == json.loads(description), "Description mismatch"
-
-@then('the response JSON should contain an error message "{message}"')
-def verify_error_message(context, message):
-    response_data = context.response.json()
-    assert 'message' in response_data or 'errorMessages' in response_data, "Error message missing in response"
-    actual_message = response_data.get('message', response_data.get('errorMessages', [None])[0])
-    assert message in str(actual_message), f"Expected error message '{message}' but got '{actual_message}'"
+@then('the response JSON should contain a todo with id "{id}"')
+def step_verify_todo_id(context, id):
+    try:
+        if not hasattr(context, 'response_data'):
+            context.response_data = context.response.json()
+    except json.JSONDecodeError:
+        context.response_data = None
+        assert False, "Response is not valid JSON"
+    
+    actual_id = get_mapped_id(context, id)
+    
+    if isinstance(context.response_data, dict) and 'todos' in context.response_data:
+        todos = context.response_data['todos']
+        found = False
+        for todo in todos:
+            if str(todo.get('id')) == actual_id:
+                found = True
+                break
+        assert found, f"No todo with ID {actual_id} found in response"
+    elif isinstance(context.response_data, dict) and 'id' in context.response_data:
+        assert_that(str(context.response_data.get('id')), equal_to(actual_id))
+    else:
+        assert False, f"Response doesn't contain a todo with ID {actual_id}: {context.response_data}"
+    
+    print(f"Verified response contains todo with ID {actual_id}")

@@ -1,81 +1,100 @@
-from behave import given, when, then
-from utils import make_request
 import json
-
-@given('the system is running')
-def verify_system_running(context):
-    # Make a simple request to verify system is up
-    response = make_request(context, "GET", "/todos")
-    assert response.status_code in [200, 404], "System is not running"
+import requests
+import random
+import string
+from behave import given, then
+from hamcrest import assert_that, equal_to, is_not, contains_string, has_key, has_length, greater_than
 
 @given('the user has a valid JSON body for a new ToDo with')
-def setup_valid_todo_data(context):
+def step_create_valid_todo_json(context):
     row = context.table[0]
-    context.todo_data = {
-        "title": json.loads(row['title']),
-        "doneStatus": row['doneStatus'].lower() == 'true',
-        "description": json.loads(row['description'])
+    
+    context.todo_body = {
+        "title": row["title"].strip('"'),
+        "doneStatus": row["doneStatus"] == "true" or row["doneStatus"] == "True",
+        "description": row["description"].strip('"')
     }
+    
+    print(f"Created valid ToDo JSON body: {context.todo_body}")
 
 @given('the user has a valid JSON body for a new ToDo without an "id" field')
-def setup_todo_data_without_id(context):
-    row = context.table[0]
-    context.todo_data = {
-        "title": json.loads(row['title']),
-        "doneStatus": row['doneStatus'].lower() == 'true',
-        "description": json.loads(row['description'])
-    }
+def step_create_valid_todo_json_without_id(context):
+    step_create_valid_todo_json(context)
 
 @given('the user has an invalid JSON body for a new ToDo with "{issue}"')
-def setup_invalid_todo_data(context, issue):
+def step_create_invalid_todo_json(context, issue):
     if issue == "missing required fields":
-        context.todo_data = {"description": "Missing title and doneStatus"}
+        context.todo_body = {
+            "doneStatus": False,
+            "description": "This ToDo is missing the required title field"
+        }
     elif issue == "title is null":
-        context.todo_data = {
+        context.todo_body = {
             "title": None,
             "doneStatus": False,
-            "description": "Title is null"
+            "description": "This ToDo has a null title"
         }
     elif issue == "doneStatus is not a boolean value":
-        context.todo_data = {
-            "title": "Invalid doneStatus",
-            "doneStatus": "not a boolean",
-            "description": "Invalid doneStatus value"
+        context.todo_body = {
+            "title": "Invalid ToDo",
+            "doneStatus": "not-a-boolean",
+            "description": "This ToDo has an invalid doneStatus value"
         }
-
-@when('the user sends a POST request to "{endpoint}" with this JSON body')
-def send_post_request(context, endpoint):
-    context.response = make_request(context, "POST", endpoint, context.todo_data)
-
-@when('the user sends a POST request to "{endpoint}" with this invalid body')
-def send_post_request_invalid(context, endpoint):
-    context.response = make_request(context, "POST", endpoint, context.todo_data)
+    else:
+        context.todo_body = {}
+    
+    print(f"Created invalid ToDo JSON body for issue '{issue}': {context.todo_body}")
 
 @then('the response JSON should contain a new ToDo with the specified title, doneStatus, and description')
-def verify_todo_creation(context):
-    response_data = context.response.json()
-    assert response_data['title'] == context.todo_data['title'], "Title mismatch"
-    assert response_data['doneStatus'] == context.todo_data['doneStatus'], "DoneStatus mismatch"
-    assert response_data['description'] == context.todo_data['description'], "Description mismatch"
+def step_verify_todo_values(context):
+    assert context.response_data is not None, "Response data is not valid JSON"
+    
+    assert_that(context.response_data, has_key("title"))
+    assert_that(context.response_data, has_key("doneStatus"))
+    assert_that(context.response_data, has_key("description"))
+    
+    request_done_status = str(context.todo_body["doneStatus"]).lower()
+    response_done_status = str(context.response_data["doneStatus"]).lower()
+    
+    assert_that(context.response_data["title"], equal_to(context.todo_body["title"]))
+    assert_that(response_done_status, equal_to(request_done_status))
+    assert_that(context.response_data["description"], equal_to(context.todo_body["description"]))
+    
+    print("Verified response contains todo with expected values")
+    
+    todo_id = context.response_data.get("id")
+    if todo_id:
+        context.test_data["todos"].append(todo_id)
+        print(f"Added todo ID {todo_id} to test data for cleanup")
 
 @then('the response JSON should contain a unique "id"')
-def verify_todo_id(context):
-    response_data = context.response.json()
-    assert 'id' in response_data, "ID field missing in response"
-    assert response_data['id'] is not None, "ID is null"
+def step_verify_unique_id(context):
+    assert context.response_data is not None, "Response data is not valid JSON"
+    
+    assert_that(context.response_data, has_key("id"))
+    assert_that(context.response_data["id"], is_not(None))
+    assert_that(len(str(context.response_data["id"])), greater_than(0))
+    
+    print(f"Verified response contains unique ID: {context.response_data['id']}")
 
 @then('the response JSON should contain a newly generated "id" that does not match any existing ToDo')
-def verify_unique_id(context):
-    response_data = context.response.json()
-    assert 'id' in response_data, "ID field missing in response"
-    assert response_data['id'] is not None, "ID is null"
-
-    # Get all todos to verify ID uniqueness
-    all_todos = make_request(context, "GET", "/todos").json()
-    id_count = sum(1 for todo in all_todos if todo['id'] == response_data['id'])
-    assert id_count == 1, "Generated ID is not unique"
-
-@then('the response JSON should contain an error message indicating invalid input')
-def verify_error_message(context):
-    response_data = context.response.json()
-    assert 'message' in response_data or 'errorMessages' in response_data, "Error message missing in response"
+def step_verify_new_id(context):
+    step_verify_unique_id(context)
+    
+    url = context.base_url + "/todos"
+    response = requests.get(url)
+    
+    try:
+        response_data = response.json()
+        if isinstance(response_data, dict) and 'todos' in response_data:
+            todos = response_data['todos']
+        else:
+            todos = response_data
+        
+        existing_ids = [todo["id"] for todo in todos if todo["id"] != context.response_data["id"]]
+        
+        assert context.response_data["id"] not in existing_ids, "New ID matches an existing todo ID"
+        
+        print(f"Verified ID {context.response_data['id']} is unique among {len(existing_ids)} existing todos")
+    except (json.JSONDecodeError, KeyError) as e:
+        assert False, f"Failed to verify unique ID: {e}"

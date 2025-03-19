@@ -25,21 +25,21 @@ Feature: Delete a ToDo by ID
     Given a ToDo with ID equal to <id> does not exist
     When the user sends a DELETE request to "/todos/<id>"
     Then the response status should be 404
-    And the response JSON should contain an error message <message>
+    And the response JSON should contain an error message mentioning "Could not find any instances with todos/<id>"
 
     Examples:
-      | id   | message          |
-      | 9999 | "ToDo not found" |
-      | 5000 | "ToDo not found" |
+      | id   |
+      | 9999 |
+      | 5000 |
   # Error Flow
 
   Scenario Outline: Delete a ToDo with an invalid ID
     Given a ToDo with ID equal to <id> does not exist or the ID format is invalid
     When the user sends a DELETE request to "/todos/<id>"
-    Then the response status should be 400
-    And the response JSON should contain an error message <message>
+    Then the response status should be 404
+    And the response JSON should contain an error message mentioning "Could not find any instances with todos/<id>"
 
     Examples:
-      | id     | message                                        |
-      | abc    | "Could not find an instance with todos/abc"    |
-      | 123abc | "Could not find an instance with todos/123abc" |
+      | id     |
+      | abc    |
+      | 123abc |

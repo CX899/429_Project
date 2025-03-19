@@ -1,159 +1,189 @@
+"""
+Environment configuration for Behave tests.
+"""
 import requests
 import json
-import time
-from steps.utils import make_request, reset_system_state
-
-BASE_URL = "http://localhost:4567"
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
-
-def check_api_health(context):
-    """Check if the API service is running and healthy"""
-    for attempt in range(MAX_RETRIES):
-        try:
-            response = requests.get(f"{context.base_url}/health")
-            if response.status_code == 200:
-                return True
-            else:
-                print(f"API health check failed (attempt {attempt + 1}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY)
-        except requests.exceptions.ConnectionError:
-            print(f"Could not connect to API (attempt {attempt + 1}/{MAX_RETRIES})")
-            time.sleep(RETRY_DELAY)
-    return False
-
-def setup_test_data(context):
-    """Setup initial test data if needed"""
-    # Example todos
-    initial_todos = [
-        {
-            "title": "Initial Todo 1",
-            "doneStatus": False,
-            "description": "First todo for testing"
-        },
-        {
-            "title": "Initial Todo 2",
-            "doneStatus": True,
-            "description": "Second todo for testing"
-        }
-    ]
-
-    # Example categories
-    initial_categories = [
-        {
-            "title": "Initial Category 1",
-            "description": "First category for testing"
-        },
-        {
-            "title": "Initial Category 2",
-            "description": "Second category for testing"
-        }
-    ]
-
-    # Example projects
-    initial_projects = [
-        {
-            "title": "Initial Project 1",
-            "completed": False,
-            "active": True,
-            "description": "First project for testing"
-        },
-        {
-            "title": "Initial Project 2",
-            "completed": True,
-            "active": False,
-            "description": "Second project for testing"
-        }
-    ]
-
-    try:
-        # Create initial todos
-        for todo in initial_todos:
-            make_request(context, "POST", "/todos", todo)
-
-        # Create initial categories
-        for category in initial_categories:
-            make_request(context, "POST", "/categories", category)
-
-        # Create initial projects
-        for project in initial_projects:
-            make_request(context, "POST", "/projects", project)
-
-    except Exception as e:
-        print(f"Failed to setup test data: {str(e)}")
-        raise
+import sys
+from time import sleep
 
 def before_all(context):
-    """Setup before all scenarios"""
-    context.base_url = BASE_URL
-    context.headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-
-    # Check if API is available
-    if not check_api_health(context):
-        raise Exception("API service is not available. Please ensure the service is running.")
-
-    # Store initial state configuration
-    context.config.setup_data = True
-    context.config.cleanup_needed = True
-
-def before_feature(context, feature):
-    """Setup before each feature"""
-    # Reset system state before each feature
-    if context.config.cleanup_needed:
-        reset_system_state(context)
-        if context.config.setup_data:
-            setup_test_data(context)
+    """Run before all tests to check if the API is running."""
+    # Base URL of the API
+    context.base_url = "http://localhost:4567"
+    
+    # Check if the API is running
+    try:
+        response = requests.get(f"{context.base_url}/todos", timeout=5)
+        print(f"Connected to API at {context.base_url}")
+        print(f"API Response Status: {response.status_code}")
+    except (requests.ConnectionError, requests.Timeout) as e:
+        print(f"ERROR: Could not connect to API at {context.base_url}")
+        print(f"Please ensure the API service is running before executing tests.")
+        sys.exit(1)  # Exit with error code - this will make the tests fail
 
 def before_scenario(context, scenario):
-    """Setup before each scenario"""
-    # Initialize scenario-specific variables
-    context.response = None
-    context.request_data = None
-    context.error_message = None
-
-    # Reset system state if needed
-    if "no_reset" not in scenario.tags:  # Allow scenarios to opt-out of reset
-        reset_system_state(context)
-        if context.config.setup_data:
-            setup_test_data(context)
+    """Run before each scenario to reset the system state."""
+    # Store original states to restore later
+    context.original_state = {}
+    
+    # Capture the original state of all entities
+    try:
+        # Get all todos
+        todos_response = requests.get(f"{context.base_url}/todos")
+        if todos_response.status_code == 200:
+            todos = todos_response.json()
+            if isinstance(todos, dict) and 'todos' in todos:
+                todos = todos['todos']
+            context.original_state['todos'] = todos
+        
+        # Get all categories
+        categories_response = requests.get(f"{context.base_url}/categories")
+        if categories_response.status_code == 200:
+            categories = categories_response.json()
+            if isinstance(categories, dict) and 'categories' in categories:
+                categories = categories['categories']
+            context.original_state['categories'] = categories
+        
+        # Get all projects
+        projects_response = requests.get(f"{context.base_url}/projects")
+        if projects_response.status_code == 200:
+            projects = projects_response.json()
+            if isinstance(projects, dict) and 'projects' in projects:
+                projects = projects['projects']
+            context.original_state['projects'] = projects
+            
+        # Capture relationships
+        context.original_state['relationships'] = {}
+        # We'll store them when needed for specific tests
+        
+        print(f"Captured original state: {len(context.original_state.get('todos', []))} todos, " 
+              f"{len(context.original_state.get('categories', []))} categories, "
+              f"{len(context.original_state.get('projects', []))} projects")
+    
+    except Exception as e:
+        print(f"Warning: Failed to capture original system state: {e}")
+        context.original_state = {'todos': [], 'categories': [], 'projects': []}
+    
+    # Initialize test data tracking
+    context.test_data = {
+        'todos': [],
+        'categories': [],
+        'projects': [],
+        'relationships': []  # Will store tuples like ('todos', 'categories', todo_id, category_id)
+    }
+    
+    context.response = None  # Store API responses
+    
+    # Print scenario information for debugging
+    print(f"\nExecuting scenario: {scenario.name}")
 
 def after_scenario(context, scenario):
-    """Cleanup after each scenario"""
-    # Cleanup any scenario-specific resources
-    if hasattr(context, 'created_resources'):
-        for resource in context.created_resources:
+    """Run after each scenario to restore the system to its original state."""
+    print("\nRestoring system to original state...")
+    
+    # 1. First, clean up relationships created during tests
+    for rel_type, entity1, entity2, id1, id2 in context.test_data.get('relationships', []):
+        try:
+            # The endpoint format varies based on relationship type
+            if rel_type == 'category_todos':
+                # Delete relationship between category and todo
+                url = f"{context.base_url}/categories/{id1}/todos/{id2}"
+                response = requests.delete(url)
+                print(f"Deleted {entity1}-{entity2} relationship: {id1}-{id2}, status: {response.status_code}")
+            elif rel_type == 'category_projects':
+                # Delete relationship between category and project
+                url = f"{context.base_url}/categories/{id1}/projects/{id2}"
+                response = requests.delete(url)
+                print(f"Deleted {entity1}-{entity2} relationship: {id1}-{id2}, status: {response.status_code}")
+            elif rel_type == 'project_tasks':
+                # Delete relationship between project and todo (tasks)
+                url = f"{context.base_url}/projects/{id1}/tasks/{id2}"
+                response = requests.delete(url)
+                print(f"Deleted {entity1}-{entity2} relationship: {id1}-{id2}, status: {response.status_code}")
+            elif rel_type == 'todo_tasksof':
+                # Delete relationship between todo and project (tasksof)
+                url = f"{context.base_url}/todos/{id1}/tasksof/{id2}"
+                response = requests.delete(url)
+                print(f"Deleted {entity1}-{entity2} relationship: {id1}-{id2}, status: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Failed to delete relationship {entity1}-{entity2} {id1}-{id2}: {e}")
+    
+    # 2. Delete test entities in reverse order of dependency
+    # First todos
+    for todo_id in context.test_data.get('todos', []):
+        try:
+            response = requests.delete(f"{context.base_url}/todos/{todo_id}")
+            print(f"Deleted test todo with ID: {todo_id}, status: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Failed to delete test todo {todo_id}: {e}")
+    
+    # Then projects
+    for project_id in context.test_data.get('projects', []):
+        try:
+            response = requests.delete(f"{context.base_url}/projects/{project_id}")
+            print(f"Deleted test project with ID: {project_id}, status: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Failed to delete test project {project_id}: {e}")
+    
+    # Finally categories
+    for category_id in context.test_data.get('categories', []):
+        try:
+            response = requests.delete(f"{context.base_url}/categories/{category_id}")
+            print(f"Deleted test category with ID: {category_id}, status: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Failed to delete test category {category_id}: {e}")
+    
+    # 3. Check that original entities still exist and restore if needed
+    # Give the API a moment to process deletions
+    sleep(0.5)
+    
+    # Restore todos if needed
+    _check_and_restore_entities(context, 'todos')
+    
+    # Restore categories if needed
+    _check_and_restore_entities(context, 'categories')
+    
+    # Restore projects if needed
+    _check_and_restore_entities(context, 'projects')
+    
+    # 4. Check original relationships (would be implemented for specific tests)
+    # This is complex and depends on the specific test case
+    
+    print("System restoration complete")
+
+def _check_and_restore_entities(context, entity_type):
+    """Helper function to check if original entities exist and restore them if needed."""
+    # Get current entities
+    response = requests.get(f"{context.base_url}/{entity_type}")
+    if response.status_code != 200:
+        print(f"Warning: Failed to get current {entity_type}, status: {response.status_code}")
+        return
+    
+    current_entities = response.json()
+    if isinstance(current_entities, dict) and entity_type in current_entities:
+        current_entities = current_entities[entity_type]
+    
+    current_ids = [str(entity.get('id')) for entity in current_entities if entity.get('id')]
+    
+    # Check original entities
+    for original_entity in context.original_state.get(entity_type, []):
+        original_id = str(original_entity.get('id'))
+        if original_id and original_id not in current_ids:
+            print(f"Original {entity_type[:-1]} {original_id} is missing, attempting to restore")
+            
+            # Create a copy of the entity data
+            entity_data = original_entity.copy()
+            # Remove the id if it exists - let the API generate a new one
+            if 'id' in entity_data:
+                del entity_data['id']
+            
+            # Try to create a new entity
             try:
-                make_request(context, "DELETE", resource)
-            except:
-                print(f"Failed to cleanup resource: {resource}")
-
-def after_feature(context, feature):
-    """Cleanup after each feature"""
-    if context.config.cleanup_needed:
-        reset_system_state(context)
-
-def after_all(context):
-    """Cleanup after all scenarios"""
-    try:
-        # Final cleanup
-        reset_system_state(context)
-        print("Test suite completed - system reset to initial state")
-    except:
-        print("Warning: Failed to reset system to initial state after all tests")
-
-def before_tag(context, tag):
-    """Handle specific tags"""
-    if tag == "no_reset":
-        context.config.cleanup_needed = False
-    elif tag == "require_setup":
-        context.config.setup_data = True
-
-def after_tag(context, tag):
-    """Cleanup after tagged scenarios"""
-    if tag == "no_reset":
-        context.config.cleanup_needed = True
-    elif tag == "require_setup":
-        context.config.setup_data = False
+                create_url = f"{context.base_url}/{entity_type}"
+                create_response = requests.post(create_url, json=entity_data)
+                if create_response.status_code in [200, 201]:
+                    print(f"Created new {entity_type[:-1]} to replace original {original_id}")
+                else:
+                    print(f"Failed to create new {entity_type[:-1]} to replace {original_id}, status: {create_response.status_code}")
+            except Exception as e:
+                print(f"Error creating new {entity_type[:-1]} to replace {original_id}: {e}")
