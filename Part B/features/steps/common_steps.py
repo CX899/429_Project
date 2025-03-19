@@ -15,6 +15,15 @@ def step_verify_system_running(context):
 
 @when('the user sends a GET request to "{endpoint}"')
 def step_send_get_request(context, endpoint):
+    if endpoint.startswith('/todos/') and hasattr(context, 'id_mapping'):
+        parts = endpoint.split('/')
+        if len(parts) >= 3 and parts[2].isdigit():
+            requested_id = parts[2]
+            if requested_id in context.id_mapping:
+                actual_id = context.id_mapping[requested_id]
+                endpoint = f"/todos/{actual_id}"
+                print(f"Mapped endpoint from {'/'.join(parts)} to {endpoint}")
+    
     url = context.base_url + endpoint
     context.response = requests.get(url)
     
@@ -26,6 +35,7 @@ def step_send_get_request(context, endpoint):
     except json.JSONDecodeError:
         context.response_data = None
         print("Response is not valid JSON")
+        
 
 @when('the user sends a {method} request to "{endpoint}"')
 def step_send_request_with_method(context, method, endpoint):
@@ -118,3 +128,29 @@ def step_verify_todos_list(context):
     print(f"Response contains {len(todos)} todos")
     if len(todos) > 0:
         print(f"First todo: {todos[0]}")
+
+@then('the response JSON should contain an error message indicating invalid input')
+def step_verify_error_for_invalid_input(context):
+    try:
+        if not hasattr(context, 'response_data'):
+            context.response_data = context.response.json()
+    except json.JSONDecodeError:
+        context.response_data = None
+    
+    if context.response_data is None:
+        assert "error" in context.response.text.lower() or "invalid" in context.response.text.lower(), \
+            f"Response does not contain an error message"
+        print("Verified error message in response text")
+    else:
+        if isinstance(context.response_data, dict) and 'errorMessages' in context.response_data:
+            error_messages = context.response_data['errorMessages']
+            assert len(error_messages) > 0, "No error messages found in response"
+            print(f"Found error messages: {error_messages}")
+        elif 'error' in context.response_data:
+            assert context.response_data['error'], "Empty error message in response"
+            print(f"Found error message: {context.response_data['error']}")
+        else:
+            response_text = json.dumps(context.response_data)
+            assert "error" in response_text.lower() or "invalid" in response_text.lower(), \
+                f"Response does not contain error message: {response_text}"
+            print("Verified error message in response JSON")

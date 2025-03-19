@@ -1,6 +1,3 @@
-"""
-Step definitions specific to ToDo API creation tests.
-"""
 import json
 import requests
 import random

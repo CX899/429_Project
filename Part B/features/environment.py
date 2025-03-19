@@ -163,24 +163,27 @@ def _check_and_restore_entities(context, entity_type):
     if isinstance(current_entities, dict) and entity_type in current_entities:
         current_entities = current_entities[entity_type]
     
-    current_ids = [entity.get('id') for entity in current_entities if entity.get('id')]
+    current_ids = [str(entity.get('id')) for entity in current_entities if entity.get('id')]
     
     # Check original entities
     for original_entity in context.original_state.get(entity_type, []):
-        original_id = original_entity.get('id')
+        original_id = str(original_entity.get('id'))
         if original_id and original_id not in current_ids:
             print(f"Original {entity_type[:-1]} {original_id} is missing, attempting to restore")
             
-            # Create a copy of the entity data without the ID
-            entity_data = {k: v for k, v in original_entity.items() if k != 'id'}
+            # Create a copy of the entity data
+            entity_data = original_entity.copy()
+            # Remove the id if it exists - let the API generate a new one
+            if 'id' in entity_data:
+                del entity_data['id']
             
-            # Try to restore with the original ID
+            # Try to create a new entity
             try:
-                restore_url = f"{context.base_url}/{entity_type}/{original_id}"
-                restore_response = requests.post(restore_url, json=entity_data)
-                if restore_response.status_code in [200, 201]:
-                    print(f"Restored original {entity_type[:-1]} {original_id}")
+                create_url = f"{context.base_url}/{entity_type}"
+                create_response = requests.post(create_url, json=entity_data)
+                if create_response.status_code in [200, 201]:
+                    print(f"Created new {entity_type[:-1]} to replace original {original_id}")
                 else:
-                    print(f"Failed to restore {entity_type[:-1]} {original_id}, status: {restore_response.status_code}")
+                    print(f"Failed to create new {entity_type[:-1]} to replace {original_id}, status: {create_response.status_code}")
             except Exception as e:
-                print(f"Error restoring {entity_type[:-1]} {original_id}: {e}")
+                print(f"Error creating new {entity_type[:-1]} to replace {original_id}: {e}")
