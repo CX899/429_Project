@@ -8,14 +8,12 @@ from features.steps.test_utils import get_mapped_id
 def step_verify_category_deleted(context, id):
     actual_id = get_mapped_id(context, id)
     
-    # First verify the category no longer exists as a direct lookup
     verify_url = f"{context.base_url}/categories/{actual_id}"
     verify_response = requests.get(verify_url)
     
     assert verify_response.status_code == 404, f"Category with ID {actual_id} still exists"
     print(f"Verified category with ID {actual_id} no longer exists")
     
-    # Get all categories to ensure it's not in the list
     all_categories_response = requests.get(f"{context.base_url}/categories")
     assert all_categories_response.status_code == 200, "Failed to get all categories"
     
@@ -26,7 +24,6 @@ def step_verify_category_deleted(context, id):
         else:
             categories = categories_data
             
-        # Verify the deleted category is not in the list
         category_ids = [str(category.get('id')) for category in categories]
         assert_that(str(actual_id), is_not(is_in(category_ids)))
         

@@ -135,7 +135,6 @@ def setup_test_categories(context, test_categories):
     if not hasattr(context, 'id_mapping'):
         context.id_mapping = {}
     
-    # Merge category mappings with existing mappings
     for req_id, actual_id in id_mapping.items():
         context.id_mapping[req_id] = actual_id
     

@@ -10,7 +10,6 @@ from features.steps.test_utils import get_mapped_id
 @given('the system contains the following projects')
 def step_setup_projects(context):
     """Set up test projects for the scenario."""
-    # Extract test projects from the table
     test_projects = []
     for row in context.table:
         test_project = {
@@ -22,10 +21,8 @@ def step_setup_projects(context):
         }
         test_projects.append(test_project)
     
-    # Set up test projects by matching or creating them
     id_mapping = {}
     
-    # Get existing projects
     response = requests.get(f"{context.base_url}/projects")
     existing_projects = []
     
@@ -41,7 +38,6 @@ def step_setup_projects(context):
             print("Error parsing existing projects response")
             existing_projects = []
     
-    # For each test project, either use an existing one or create a new one
     for project in test_projects:
         requested_id = str(project.get('id', '')).strip()
         title = project.get('title', '').strip('"')
@@ -49,7 +45,6 @@ def step_setup_projects(context):
         active = project.get('active', True)
         description = project.get('description', '').strip('"')
         
-        # Look for a matching project
         matching_project = next(
             (p for p in existing_projects if 
              p.get('title') == title and 
@@ -60,7 +55,6 @@ def step_setup_projects(context):
         )
         
         if matching_project:
-            # Use existing project
             actual_id = matching_project.get('id')
             id_mapping[requested_id] = actual_id
             print(f"Using existing project with ID {actual_id} for requested ID {requested_id}")
@@ -68,7 +62,6 @@ def step_setup_projects(context):
             if actual_id not in context.test_data['projects']:
                 context.test_data['projects'].append(actual_id)
         else:
-            # Create a new project
             project_data = {
                 'title': title,
                 'completed': completed,
@@ -94,7 +87,6 @@ def step_setup_projects(context):
     if not hasattr(context, 'id_mapping'):
         context.id_mapping = {}
     
-    # Merge with existing mappings
     for req_id, actual_id in id_mapping.items():
         context.id_mapping[req_id] = actual_id
 
@@ -107,7 +99,6 @@ def step_verify_specific_projects(context):
         except json.JSONDecodeError:
             assert False, "Response is not valid JSON"
     
-    # Handle different response formats
     if isinstance(context.response_data, dict) and 'projects' in context.response_data:
         projects = context.response_data['projects']
     else:
@@ -126,11 +117,9 @@ def step_verify_specific_projects(context):
         }
         expected_projects.append(expected_project)
     
-    # Verify each expected project exists in the response
     for expected in expected_projects:
         found = False
         for actual in projects:
-            # Convert boolean values to strings for comparison
             actual_completed = str(actual.get('completed')).lower()
             expected_completed = str(expected['completed']).lower()
             actual_active = str(actual.get('active')).lower()
@@ -158,13 +147,11 @@ def step_verify_filtered_projects(context, filter_key, filter_value):
         except json.JSONDecodeError:
             assert False, "Response is not valid JSON"
     
-    # Handle different response formats
     if isinstance(context.response_data, dict) and 'projects' in context.response_data:
         projects = context.response_data['projects']
     else:
         projects = context.response_data
     
-    # Process the expected value based on its type
     if filter_value.lower() in ['true', 'false']:
         expected_value = filter_value.lower()
     else:

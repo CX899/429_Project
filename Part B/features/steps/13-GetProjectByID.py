@@ -8,15 +8,12 @@ from features.steps.test_utils import get_mapped_id, verify_error_message
 
 @then('the response JSON should contain a project with the following details')
 def step_verify_project_details(context):
-    """Verify that the response contains a project with the expected details."""
-    # First ensure we have response data
     if not hasattr(context, 'response_data'):
         try:
             context.response_data = context.response.json()
         except json.JSONDecodeError:
             assert False, "Response is not valid JSON"
     
-    # Extract expected project details from the first row in the table
     row = context.table[0]
     expected_id = get_mapped_id(context, row['id'])
     expected_title = row['title'].strip('"')
@@ -24,7 +21,6 @@ def step_verify_project_details(context):
     expected_active = row['active'].lower()
     expected_description = row['description'].strip('"')
     
-    # Handle both direct object and object within projects array
     project = None
     if isinstance(context.response_data, dict) and 'projects' in context.response_data:
         projects = context.response_data['projects']
@@ -33,10 +29,8 @@ def step_verify_project_details(context):
     else:
         project = context.response_data
     
-    # Verify project exists and has expected values
     assert project is not None, f"No project found in response"
     
-    # Verify each field
     assert_that(str(project.get('id')), equal_to(str(expected_id)))
     assert_that(project.get('title'), equal_to(expected_title))
     assert_that(str(project.get('completed')).lower(), equal_to(expected_completed))
@@ -47,8 +41,6 @@ def step_verify_project_details(context):
 
 @then('the response should contain a "Not Found" message')
 def step_verify_not_found_message(context):
-    """Verify that the response contains a Not Found message."""
-    # Check error message using common phrases for not found
     error_phrases = ["not found", "could not find", "does not exist"]
     
     has_error = False
@@ -91,7 +83,6 @@ def step_verify_not_found_message(context):
 @then('the response should contain an error message about invalid ID format')
 def step_verify_invalid_id_message(context):
     """Verify that the response contains an invalid ID format error message."""
-    # Check for error messages about invalid ID format
     error_phrases = ["invalid", "format", "id", "not valid", "malformed"]
     
     has_error = False
@@ -131,7 +122,6 @@ def step_verify_invalid_id_message(context):
     assert has_error, "No invalid ID format error message found in response"
     print("Verified response contains invalid ID format error message")
 
-# Add this function for the missing step
 @then('the response should contain an error message mentioning "{message}"')
 def step_verify_specific_error_message(context, message):
     """Verify that the response contains a specific error message."""

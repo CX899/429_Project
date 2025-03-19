@@ -41,11 +41,8 @@ def step_create_invalid_todo_json(context, issue):
             "description": "This ToDo has an invalid doneStatus value"
         }
     elif issue == "bug: post to existing todo":
-        # For the bug scenario, we need to make sure todo with ID 1 exists
-        # First check if it exists
         check_response = requests.get(f"{context.base_url}/todos/1")
         if check_response.status_code != 200:
-            # Create a new todo if ID 1 doesn't exist
             create_data = {
                 "title": "Test Todo for Bug Scenario",
                 "doneStatus": False,
@@ -62,7 +59,6 @@ def step_create_invalid_todo_json(context, issue):
                 except Exception as e:
                     print(f"Error processing create response: {e}")
         else:
-            # ID 1 exists, make sure it's in our cleanup list
             try:
                 todo = check_response.json()
                 todo_id = todo.get('id')
@@ -72,7 +68,6 @@ def step_create_invalid_todo_json(context, issue):
             except Exception as e:
                 print(f"Error processing check response: {e}")
         
-        # Empty body for the bug scenario
         context.todo_body = {}
     else:
         context.todo_body = {}
@@ -105,10 +100,8 @@ def step_verify_method_not_allowed(context):
     
     has_error = False
     
-    # First check if we have response data as JSON
     if hasattr(context, 'response_data') and context.response_data:
         if isinstance(context.response_data, dict):
-            # Check in different possible error message locations
             if 'errorMessages' in context.response_data:
                 error_messages = context.response_data['errorMessages']
                 error_text = ' '.join(error_messages) if isinstance(error_messages, list) else str(error_messages)
@@ -125,7 +118,6 @@ def step_verify_method_not_allowed(context):
                         print(f"Found error phrase '{phrase}' in error field")
                         break
             else:
-                # Check if the phrase is anywhere in the response JSON
                 response_text = json.dumps(context.response_data).lower()
                 for phrase in error_phrases:
                     if phrase.lower() in response_text:
@@ -133,7 +125,6 @@ def step_verify_method_not_allowed(context):
                         print(f"Found error phrase '{phrase}' in response JSON")
                         break
     
-    # If not found in JSON, check in the raw response text
     if not has_error and hasattr(context, 'response'):
         response_text = context.response.text.lower()
         for phrase in error_phrases:

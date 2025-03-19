@@ -11,7 +11,6 @@ def before_all(context):
     # Base URL of the API
     context.base_url = "http://localhost:4567"
     
-    # Check if the API is running
     try:
         response = requests.get(f"{context.base_url}/todos", timeout=5)
         print(f"Connected to API at {context.base_url}")
@@ -23,10 +22,8 @@ def before_all(context):
 
 def before_scenario(context, scenario):
     """Run before each scenario to reset the system state."""
-    # Store original states to restore later
     context.original_state = {}
     
-    # Capture the original state of all entities
     try:
         # Get all todos
         todos_response = requests.get(f"{context.base_url}/todos")
@@ -54,7 +51,6 @@ def before_scenario(context, scenario):
             
         # Capture relationships
         context.original_state['relationships'] = {}
-        # We'll store them when needed for specific tests
         
         print(f"Captured original state: {len(context.original_state.get('todos', []))} todos, " 
               f"{len(context.original_state.get('categories', []))} categories, "
@@ -69,12 +65,11 @@ def before_scenario(context, scenario):
         'todos': [],
         'categories': [],
         'projects': [],
-        'relationships': []  # Will store tuples like ('todos', 'categories', todo_id, category_id)
+        'relationships': [] 
     }
     
-    context.response = None  # Store API responses
+    context.response = None 
     
-    # Print scenario information for debugging
     print(f"\nExecuting scenario: {scenario.name}")
 
 def after_scenario(context, scenario):

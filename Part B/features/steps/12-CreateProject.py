@@ -21,14 +21,12 @@ def step_create_valid_project_json(context):
 
 @given('I have the following project information without an ID')
 def step_create_valid_project_json_without_id(context):
-    # This is identical to the above step but kept for test readability
     step_create_valid_project_json(context)
 
 @given('I have the following incomplete project information')
 def step_create_incomplete_project_json(context):
     row = context.table[0]
     
-    # Create a body without the title field
     context.project_body = {
         "completed": row["completed"] == "true" or row["completed"] == "True",
         "active": row["active"] == "true" or row["active"] == "True",
@@ -39,7 +37,6 @@ def step_create_incomplete_project_json(context):
 
 @when('I send a {method} request to "{endpoint}" with this project information')
 def step_send_request_with_project_data(context, method, endpoint):
-    # Map the endpoint if it contains an ID
     url = context.base_url + endpoint
     headers = {"Content-Type": "application/json"}
     
@@ -56,7 +53,6 @@ def step_send_request_with_project_data(context, method, endpoint):
         context.response_data = None
         print("Response is not valid JSON")
     
-    # Store project ID for cleanup if created
     if context.response.status_code in [200, 201] and context.response_data and 'id' in context.response_data:
         project_id = context.response_data.get("id")
         if project_id:
@@ -65,7 +61,6 @@ def step_send_request_with_project_data(context, method, endpoint):
 
 @when('I send a {method} request to "{endpoint}" with this incomplete information')
 def step_send_request_with_incomplete_project_data(context, method, endpoint):
-    # Reuse the existing step for consistency
     step_send_request_with_project_data(context, method, endpoint)
 
 @then('the response should contain the created project with a generated ID')
@@ -80,10 +75,8 @@ def step_verify_project_with_id(context):
 
 @then('the response should contain the created project with a system-generated ID')
 def step_verify_system_generated_id(context):
-    # Reuse the step above since functionality is identical
     step_verify_project_with_id(context)
     
-    # Additional verification that the ID is unique
     url = context.base_url + "/projects"
     response = requests.get(url)
     
@@ -111,7 +104,6 @@ def step_verify_project_values(context):
     assert_that(context.response_data, has_key("active"))
     assert_that(context.response_data, has_key("description"))
     
-    # Compare boolean values as strings to handle different representations
     response_completed = str(context.response_data["completed"]).lower()
     request_completed = str(context.project_body["completed"]).lower()
     
@@ -127,26 +119,21 @@ def step_verify_project_values(context):
 
 @then('the response should contain validation errors')
 def step_verify_validation_errors(context):
-    # First check - does this API actually require a title?
     if context.response.status_code == 201:
         print("API accepted project without title (returned 201). Checking if title was auto-set to empty string.")
         assert_that(context.response_data, has_key("title"))
         assert_that(context.response_data["title"], equal_to(""))
         print("API set an empty title. Adjusting test expectation to match actual API behavior.")
         
-        # Add the ID to test data for cleanup
         project_id = context.response_data.get("id")
         if project_id and project_id not in context.test_data["projects"]:
             context.test_data["projects"].append(project_id)
             print(f"Added project ID {project_id} to test data for cleanup")
         
-        # Test passes since we've verified the API assigns an empty string for missing title
         return
     
-    # If we get here, the API rejected the request as expected
     assert context.response.status_code == 400, f"Expected 400 status code, got {context.response.status_code}"
     
-    # Check for various error message formats based on the pattern in your codebase
     error_phrases = ["error", "invalid", "missing", "required", "mandatory", "title"]
     
     has_error = False
