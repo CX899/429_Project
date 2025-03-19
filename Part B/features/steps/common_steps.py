@@ -265,3 +265,22 @@ def step_verify_missing_required_fields_error(context):
     assert verify_error_message(context, error_phrases), \
         f"Error message about missing required fields not found in response"
     print("Verified response contains error message about missing required fields")
+
+@then('the response contains a list of projects')
+def step_verify_projects_list(context):
+    if not hasattr(context, 'response_data'):
+        try:
+            context.response_data = context.response.json()
+        except json.JSONDecodeError:
+            assert False, "Response is not valid JSON"
+    
+    if isinstance(context.response_data, dict) and 'projects' in context.response_data:
+        projects = context.response_data['projects']
+    else:
+        projects = context.response_data
+    
+    assert isinstance(projects, list), f"Expected a list of projects, but got {type(projects)}"
+    
+    print(f"Response contains {len(projects)} projects")
+    if len(projects) > 0:
+        print(f"First project: {projects[0]}")
