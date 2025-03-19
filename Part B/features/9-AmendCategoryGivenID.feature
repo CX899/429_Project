@@ -23,7 +23,7 @@ Feature: Amend a Category Given an ID
       | id | method | new_title     | new_description         |
       | 1  | PUT    | Work Projects | Professional activities |
 
-  # Alternate Flow - Using a simpler approach that doesn't rely on accessing context._runner
+  # Alternate Flow
   Scenario: Update only description field of a Category
     Given I have the following updated category data
       | title      | description       |
@@ -34,7 +34,7 @@ Feature: Amend a Category Given an ID
       | id | title      | description      |
       | 2  | "Personal" | "Daily routines" |
 
-  # Error Flow - Updated to expect 404 instead of 400
+  # Error Flow
   Scenario Outline: Update a Category with invalid ID
     Given I have the following updated category data
       | title      | description     |
