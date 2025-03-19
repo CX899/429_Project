@@ -120,6 +120,11 @@ def step_send_post_request_with_json(context, endpoint):
 
 @when('the user sends a POST request to "{endpoint}" with this invalid body')
 def step_send_post_request_with_invalid_json(context, endpoint):
+    # Special case for the bug scenario - POST to existing todo ID
+    if hasattr(context, 'special_endpoint') and context.special_endpoint:
+        endpoint = context.special_endpoint
+        print(f"Using special endpoint for bug scenario: {endpoint}")
+    
     # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     

@@ -2,7 +2,7 @@ import json
 import requests
 import random
 import string
-from behave import given, then
+from behave import given, then, when
 from hamcrest import assert_that, equal_to, is_not, contains_string, has_key, has_length, greater_than
 
 @given('the user has a valid JSON body for a new ToDo with')
@@ -40,10 +40,110 @@ def step_create_invalid_todo_json(context, issue):
             "doneStatus": "not-a-boolean",
             "description": "This ToDo has an invalid doneStatus value"
         }
+    elif issue == "bug: post to existing todo":
+        # For the bug scenario, we need to make sure todo with ID 1 exists
+        # First check if it exists
+        check_response = requests.get(f"{context.base_url}/todos/1")
+        if check_response.status_code != 200:
+            # Create a new todo if ID 1 doesn't exist
+            create_data = {
+                "title": "Test Todo for Bug Scenario",
+                "doneStatus": False,
+                "description": "This ToDo is created to test the POST to ID bug"
+            }
+            create_response = requests.post(f"{context.base_url}/todos", json=create_data)
+            if create_response.status_code in [200, 201]:
+                try:
+                    created_todo = create_response.json()
+                    todo_id = created_todo.get('id')
+                    if todo_id:
+                        context.test_data['todos'].append(todo_id)
+                        print(f"Created todo for bug testing with ID: {todo_id}")
+                except Exception as e:
+                    print(f"Error processing create response: {e}")
+        else:
+            # ID 1 exists, make sure it's in our cleanup list
+            try:
+                todo = check_response.json()
+                todo_id = todo.get('id')
+                if todo_id and todo_id not in context.test_data['todos']:
+                    context.test_data['todos'].append(todo_id)
+                print(f"Found existing todo with ID: {todo_id}")
+            except Exception as e:
+                print(f"Error processing check response: {e}")
+        
+        # Empty body for the bug scenario
+        context.todo_body = {}
     else:
         context.todo_body = {}
     
     print(f"Created invalid ToDo JSON body for issue '{issue}': {context.todo_body}")
+
+@when('the user sends a POST request to "{endpoint}"')
+def step_send_post_request_direct(context, endpoint):
+    """Send a POST request to the specified endpoint."""
+    url = context.base_url + endpoint
+    headers = {"Content-Type": "application/json"}
+    
+    print(f"Sending POST request to {url} with body: {context.todo_body}")
+    context.response = requests.post(url, json=context.todo_body, headers=headers)
+    
+    print(f"Response status: {context.response.status_code}")
+    print(f"Response content: {context.response.text[:200]}...")
+    
+    try:
+        context.response_data = context.response.json()
+        print(f"Response data: {json.dumps(context.response_data)[:200]}...")
+    except json.JSONDecodeError:
+        context.response_data = None
+        print("Response is not valid JSON")
+
+@then('the response should include an error message about method not allowed')
+def step_verify_method_not_allowed(context):
+    """Verify that the response includes an error message about HTTP method not allowed."""
+    error_phrases = ["method not allowed", "not supported", "invalid method", "not permitted"]
+    
+    has_error = False
+    
+    # First check if we have response data as JSON
+    if hasattr(context, 'response_data') and context.response_data:
+        if isinstance(context.response_data, dict):
+            # Check in different possible error message locations
+            if 'errorMessages' in context.response_data:
+                error_messages = context.response_data['errorMessages']
+                error_text = ' '.join(error_messages) if isinstance(error_messages, list) else str(error_messages)
+                for phrase in error_phrases:
+                    if phrase.lower() in error_text.lower():
+                        has_error = True
+                        print(f"Found error phrase '{phrase}' in errorMessages")
+                        break
+            elif 'error' in context.response_data:
+                error_text = str(context.response_data['error']).lower()
+                for phrase in error_phrases:
+                    if phrase.lower() in error_text:
+                        has_error = True
+                        print(f"Found error phrase '{phrase}' in error field")
+                        break
+            else:
+                # Check if the phrase is anywhere in the response JSON
+                response_text = json.dumps(context.response_data).lower()
+                for phrase in error_phrases:
+                    if phrase.lower() in response_text:
+                        has_error = True
+                        print(f"Found error phrase '{phrase}' in response JSON")
+                        break
+    
+    # If not found in JSON, check in the raw response text
+    if not has_error and hasattr(context, 'response'):
+        response_text = context.response.text.lower()
+        for phrase in error_phrases:
+            if phrase.lower() in response_text:
+                has_error = True
+                print(f"Found error phrase '{phrase}' in response text")
+                break
+    
+    assert has_error, "No 'method not allowed' error message found in response"
+    print("Verified response contains a 'method not allowed' error message")
 
 @then('the response JSON should contain a new ToDo with the specified title, doneStatus, and description')
 def step_verify_todo_values(context):
