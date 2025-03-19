@@ -1,7 +1,7 @@
 import requests
 import json
 import time
-from .utils import make_request, reset_system_state
+from steps.utils import make_request, reset_system_state
 
 BASE_URL = "http://localhost:4567"
 MAX_RETRIES = 3

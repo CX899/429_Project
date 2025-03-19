@@ -1,30 +1,10 @@
 from behave import given, when, then
-from utils import make_request, reset_system_state
+from utils import make_request
 import json
-
-@given('the system contains the following todos')
-def setup_initial_todos(context):
-    # Reset system state first
-    reset_system_state(context)
-
-    # Create the todos from the table
-    for row in context.table:
-        todo_data = {
-            "title": json.loads(row['title']),  # Remove quotes from string
-            "doneStatus": row['doneStatus'] == 'true',
-            "description": json.loads(row['description'])
-        }
-        response = make_request(context, "POST", "/todos", todo_data)
-        assert response.status_code == 201, f"Failed to create todo: {response.text}"
 
 @when('the user sends a {method} request to "{endpoint}"')
 def send_request(context, method, endpoint):
     context.response = make_request(context, method, endpoint)
-
-@then('the response status should be {status:d}')
-def verify_response_status(context, status):
-    assert context.response.status_code == status, \
-        f"Expected status code {status} but got {context.response.status_code}"
 
 @then('the response JSON should include the following todos')
 def verify_response_todos(context):

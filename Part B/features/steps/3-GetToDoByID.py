@@ -1,33 +1,12 @@
 from behave import given, when, then
 from utils import make_request
 import json
-
-@given('the system contains the following todos')
-def setup_todos(context):
-    # Reset system first
-    response = make_request(context, "GET", "/todos")
-    if response.status_code == 200:
-        for todo in response.json():
-            make_request(context, "DELETE", f"/todos/{todo['id']}")
-
-    # Create new todos
-    for row in context.table:
-        todo_data = {
-            "title": json.loads(row['title']),
-            "doneStatus": row['doneStatus'].lower() == 'true',
-            "description": json.loads(row['description'])
-        }
-        response = make_request(context, "POST", "/todos", todo_data)
-        assert response.status_code == 201, f"Failed to create todo: {response.text}"
+# Shared steps will be automatically loaded by behave
 
 @given('a ToDo with ID equal to {id} does not exist or the ID format is invalid')
 def verify_todo_nonexistent(context, id):
     response = make_request(context, "GET", f"/todos/{id}")
     assert response.status_code in [404, 400], f"Expected todo {id} to not exist or be invalid"
-
-@when('the user sends a GET request to "/todos/{id}"')
-def get_todo_by_id(context, id):
-    context.response = make_request(context, "GET", f"/todos/{id}")
 
 @then('the response JSON should include the todo with id "{id}" with title "{title}", doneStatus "{doneStatus}" and description "{description}"')
 def verify_todo_details(context, id, title, doneStatus, description):
