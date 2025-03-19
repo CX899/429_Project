@@ -11,7 +11,7 @@ Feature: Delete a Project Given an ID
   # Normal Flow
   Scenario Outline: Delete a specific Project by ID
     When I send a <method> request to "/projects/<id>"
-    Then the response status should be 200
+    Then the response status should be 204
     When the user sends a GET request to "/projects"
     Then the response should not contain a project with ID <id>
     And the response should contain projects with IDs <remaining_ids>

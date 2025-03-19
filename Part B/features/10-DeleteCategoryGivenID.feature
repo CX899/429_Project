@@ -8,10 +8,10 @@ Feature: Delete a Category Given an ID
       | 2  | "Personal" | "Personal tasks"     |
       | 3  | "Shopping" | "Items to purchase"  |
 
-  # Normal Flow - Updated to expect 200 instead of 204 based on actual API behavior
+  # Normal Flow
   Scenario Outline: Delete an existing Category
     When I send a <method> request to "/categories/<id>"
-    Then the response status should be 200
+    Then the response status should be 204
     When I send a GET request to "/categories/<id>"
     Then the response status should be 404
 
@@ -29,7 +29,7 @@ Feature: Delete a Category Given an ID
       | method | id |
       | DELETE | 99 |
 
-  # Error Flow - Updated to expect 404 instead of 400 based on actual API behavior
+  # Error Flow
   Scenario Outline: Delete a Category with invalid ID format
     When I send a <method> request to "/categories/<invalid_id>"
     Then the response status should be 404

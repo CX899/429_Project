@@ -29,7 +29,7 @@ Feature: Create a Project
       | method | endpoint  | title              | completed | active | description            |
       | POST   | /projects | Database Migration | false     | true   | Upgrade to PostgreSQL |
 
-  # Error Flow - Adjusted to match actual API behavior
+  # Error Flow
   Scenario Outline: Create a Project with missing title field
     Given I have the following incomplete project information
       | completed   | active   | description       |
