@@ -6,8 +6,6 @@ from features.steps.test_utils import setup_test_todos, get_mapped_id, verify_to
 
 @given('the system has been reset to its initial state')
 def step_reset_system(context):
-    # This step will leverage the environment.py's before_scenario handling
-    # which already resets the system state
     print("System has been reset to its initial state")
 
 @given('the system contains the following todos:')
@@ -26,7 +24,6 @@ def step_setup_specific_todos(context):
 
 @when('the user sends a DELETE request to "{endpoint}"')
 def step_delete_request(context, endpoint):
-    # Extract the ID from the endpoint if it contains one
     if '/todos/' in endpoint:
         parts = endpoint.split('/')
         if len(parts) >= 3:
@@ -55,13 +52,11 @@ def step_delete_request(context, endpoint):
 def step_verify_todo_deleted(context, id):
     actual_id = get_mapped_id(context, id)
     
-    # Verify that the ToDo no longer exists
     url = f"{context.base_url}/todos/{actual_id}"
     response = requests.get(url)
     
     assert response.status_code == 404, f"ToDo with ID {actual_id} still exists"
     
-    # Get all todos to verify it's not in the list
     all_todos_response = requests.get(f"{context.base_url}/todos")
     assert all_todos_response.status_code == 200, "Failed to get all todos"
     
@@ -72,7 +67,6 @@ def step_verify_todo_deleted(context, id):
         else:
             todos = todos_data
             
-        # Verify the deleted todo is not in the list
         todo_ids = [str(todo.get('id')) for todo in todos]
         assert_that(actual_id, is_not(is_in(todo_ids)))
         

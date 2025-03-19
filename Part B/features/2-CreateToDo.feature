@@ -35,12 +35,13 @@ Feature: Create a ToDo
 
   Scenario Outline: Attempt to create a ToDo with invalid or missing fields
     Given the user has an invalid JSON body for a new ToDo with "<issue>"
-    When the user sends a POST request to "/todos" with this invalid body
-    Then the response status should be 400
-    And the response JSON should contain an error message indicating invalid input
+    When the user sends a POST request to "<endpoint>"
+    Then the response status should be <status>
+    And <assertion>
 
     Examples:
-      | issue                               |
-      | "missing required fields"           |
-      | "title is null"                     |
-      | "doneStatus is not a boolean value" |
+      | issue                               | endpoint                | status | assertion                                                   |
+      | "missing required fields"           | /todos                  | 400    | the response JSON should contain an error message indicating invalid input |
+      | "title is null"                     | /todos                  | 400    | the response JSON should contain an error message indicating invalid input |
+      | "doneStatus is not a boolean value" | /todos                  | 400    | the response JSON should contain an error message indicating invalid input |
+      | "bug: post to existing todo"        | /todos/1                | 405    | the response should include an error message about method not allowed      |

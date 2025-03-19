@@ -17,8 +17,6 @@ def step_setup_updated_category_data(context):
 
 @given('I have the following partial category data')
 def step_setup_partial_category_data(context):
-    # This step is no longer needed with the simplified approach in the feature file
-    # We'll reuse the regular updated category data step
     step_setup_updated_category_data(context)
 
 @then('the response JSON should include the following updated category')
@@ -35,7 +33,6 @@ def step_verify_updated_category(context):
     expected_title = row['title'].strip('"')
     expected_description = row['description'].strip('"')
     
-    # Check if response is a direct category object
     if isinstance(context.response_data, dict) and 'id' in context.response_data:
         category = context.response_data
         assert_that(str(category.get('id')), equal_to(str(actual_id)))
@@ -43,7 +40,6 @@ def step_verify_updated_category(context):
         assert_that(category.get('description'), equal_to(expected_description))
         print(f"Verified updated category in response: {category}")
     else:
-        # If response doesn't contain the full category, verify by making a GET request
         url = f"{context.base_url}/categories/{actual_id}"
         response = requests.get(url)
         

@@ -16,7 +16,6 @@ def step_create_valid_category_json(context):
 
 @given('I have incomplete category data missing "{missing_field}"')
 def step_create_incomplete_category_json(context, missing_field):
-    # Strip quotes that might be in the feature file
     missing_field = missing_field.strip('"')
     
     if missing_field == "title":
@@ -24,8 +23,6 @@ def step_create_incomplete_category_json(context, missing_field):
             "description": "This category is missing the required title field"
         }
     else:
-        # For any other field or empty input, create an empty body
-        # as we've discovered only title is actually mandatory
         context.category_body = {}
     
     print(f"Created incomplete Category JSON body missing '{missing_field}': {context.category_body}")

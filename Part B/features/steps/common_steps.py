@@ -16,7 +16,6 @@ def step_verify_system_running(context):
 
 @when('the user sends a GET request to "{endpoint}"')
 def step_send_get_request(context, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -34,7 +33,6 @@ def step_send_get_request(context, endpoint):
 
 @when('I send a GET request to "{endpoint}"')
 def step_send_get_request_to_endpoint(context, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -55,7 +53,6 @@ def step_send_get_request_to_endpoint(context, endpoint):
 
 @when('the user sends a {method} request to "{endpoint}"')
 def step_send_request_with_method(context, method, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -76,7 +73,6 @@ def step_send_request_with_method(context, method, endpoint):
 
 @when('I send a DELETE request to "{endpoint}"')
 def step_send_delete_request(context, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -97,7 +93,6 @@ def step_send_delete_request(context, endpoint):
 
 @when('the user sends a POST request to "{endpoint}" with this JSON body')
 def step_send_post_request_with_json(context, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -120,7 +115,10 @@ def step_send_post_request_with_json(context, endpoint):
 
 @when('the user sends a POST request to "{endpoint}" with this invalid body')
 def step_send_post_request_with_invalid_json(context, endpoint):
-    # Map the endpoint if it contains an ID
+    if hasattr(context, 'special_endpoint') and context.special_endpoint:
+        endpoint = context.special_endpoint
+        print(f"Using special endpoint for bug scenario: {endpoint}")
+    
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -144,7 +142,6 @@ def step_send_post_request_with_invalid_json(context, endpoint):
 
 @when('I send a {method} request to "{endpoint}" with the updated data')
 def step_send_request_with_updated_data(context, method, endpoint):
-    # Map the endpoint if it contains an ID
     mapped_endpoint = map_endpoint_id(context, endpoint)
     
     url = context.base_url + mapped_endpoint
@@ -265,3 +262,22 @@ def step_verify_missing_required_fields_error(context):
     assert verify_error_message(context, error_phrases), \
         f"Error message about missing required fields not found in response"
     print("Verified response contains error message about missing required fields")
+
+@then('the response contains a list of projects')
+def step_verify_projects_list(context):
+    if not hasattr(context, 'response_data'):
+        try:
+            context.response_data = context.response.json()
+        except json.JSONDecodeError:
+            assert False, "Response is not valid JSON"
+    
+    if isinstance(context.response_data, dict) and 'projects' in context.response_data:
+        projects = context.response_data['projects']
+    else:
+        projects = context.response_data
+    
+    assert isinstance(projects, list), f"Expected a list of projects, but got {type(projects)}"
+    
+    print(f"Response contains {len(projects)} projects")
+    if len(projects) > 0:
+        print(f"First project: {projects[0]}")
