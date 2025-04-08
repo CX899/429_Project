@@ -1,5 +1,3 @@
-# performance_test.py
-
 import time
 import csv
 import random
