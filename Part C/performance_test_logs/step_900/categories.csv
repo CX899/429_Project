@@ -1,0 +1,11 @@
+timestamp,object_type,operation,target_population_step,population_at_operation,population_after_operation,duration_sec,cpu_percent_before,cpu_percent_after,cpu_percent_smoothed,memory_percent_before,memory_percent_after,status_code,error
+2025-04-07T23:35:17.814777,categories,DELETE,900,900,899,0.0074,0.0,0.0,4.9,55.1,55.1,200,
+2025-04-07T23:35:18.031852,categories,CREATE,900,899,900,0.0096,0.0,21.5,21.5,55.1,55.1,201,
+2025-04-07T23:35:18.258717,categories,CREATE,900,900,901,0.0069,48.2,36.6,36.6,55.1,55.1,201,
+2025-04-07T23:35:18.475600,categories,UPDATE,900,901,901,0.0037,0.0,0.0,36.6,55.1,55.1,200,
+2025-04-07T23:35:18.685887,categories,CREATE,900,901,902,0.0048,0.0,0.0,36.6,55.1,55.2,201,
+2025-04-07T23:35:18.892817,categories,CREATE,900,902,903,0.0027,0.0,0.0,36.6,55.2,55.2,201,
+2025-04-07T23:35:19.098356,categories,CREATE,900,903,904,0.0047,0.0,25.7,25.7,55.2,55.2,201,
+2025-04-07T23:35:19.312293,categories,CREATE,900,904,905,0.0047,18.8,9.4,9.4,55.1,55.1,201,
+2025-04-07T23:35:19.527599,categories,UPDATE,900,905,905,0.0068,3.6,27.5,27.5,55.1,55.1,200,
+2025-04-07T23:35:19.745923,categories,DELETE,900,905,904,0.0066,0.0,0.0,27.5,55.1,55.2,200,
