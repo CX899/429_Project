@@ -1,0 +1,4 @@
+timestamp,sample_time_sec,object_type,operation,target_population_step,population_at_operation,population_after_operation,duration_sec,cpu_percent_before,cpu_percent_after,cpu_percent_smoothed,memory_percent_before,memory_percent_after,status_code,error
+2025-04-08T16:04:27.153384,1.6191,todos,CREATE,100,100,101,0.0074,53.7,48.3,48.3,61.5,61.5,201,
+2025-04-08T16:04:27.373741,1.8395,todos,UPDATE,100,101,101,0.0334,45.6,0.0,48.3,61.5,61.8,200,
+2025-04-08T16:04:27.617716,2.0834,todos,DELETE,100,101,100,0.0215,0.0,0.0,48.3,61.8,61.8,200,
