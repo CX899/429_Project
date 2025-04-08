@@ -1,4 +1,4 @@
 timestamp,sample_time_sec,object_type,operation,target_population_step,population_at_operation,population_after_operation,duration_sec,cpu_percent_before,cpu_percent_after,cpu_percent_smoothed,memory_percent_before,memory_percent_after,status_code,error
-2025-04-08T16:04:53.834716,28.3004,projects,CREATE,2000,2000,2001,0.0145,0.0,0.0,34.7,62.2,62.3,201,
-2025-04-08T16:04:54.058832,28.5245,projects,UPDATE,2000,2001,2001,0.0217,0.0,0.0,34.7,62.3,62.3,200,
-2025-04-08T16:04:54.291995,28.7577,projects,DELETE,2000,2001,2000,0.0137,0.0,0.0,34.7,62.1,62.1,200,
+2025-04-08T16:32:32.076437,21.0591,projects,CREATE,2000,2000,2001,0.0207,45.9,0.0,18.3,50.2,50.2,201,
+2025-04-08T16:32:32.308040,21.2907,projects,UPDATE,2000,2001,2001,0.0085,0.0,0.0,18.3,50.2,50.3,200,
+2025-04-08T16:32:32.524138,21.5068,projects,DELETE,2000,2001,2000,0.0072,0.0,0.0,18.3,50.3,50.3,200,
